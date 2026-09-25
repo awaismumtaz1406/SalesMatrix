@@ -21,7 +21,8 @@ import {
   Award, 
   ArrowUpRight,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import { SalesRecord, KPISummary } from '../../types';
 import { 
@@ -32,16 +33,25 @@ import {
   formatCurrency, 
   formatPercent 
 } from '../../utils/dataAnalytics';
+import { User } from '@supabase/supabase-js';
 
 interface OverviewViewProps {
   records: SalesRecord[];
   summary: KPISummary;
+  currentUser?: User | null;
   onOpenAiInsights?: () => void;
+  onRequireAuth?: (reason: string) => void;
 }
 
 const CATEGORY_COLORS = ['#6366f1', '#10b981', '#a855f7', '#06b6d4', '#f59e0b', '#ec4899'];
 
-export const OverviewView: React.FC<OverviewViewProps> = ({ records, summary, onOpenAiInsights }) => {
+export const OverviewView: React.FC<OverviewViewProps> = ({ 
+  records, 
+  summary, 
+  currentUser,
+  onOpenAiInsights,
+  onRequireAuth 
+}) => {
   const timelineData = getMonthlyTimeline(records);
   const categoryData = getCategoryBreakdown(records);
   const regionalData = getRegionalBreakdown(records);
@@ -102,11 +112,29 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ records, summary, on
 
         {onOpenAiInsights && (
           <button
-            onClick={onOpenAiInsights}
+            onClick={() => {
+              if (!currentUser && onRequireAuth) {
+                onRequireAuth('Sign in to unlock Gemini AI intelligence');
+              } else {
+                onOpenAiInsights();
+              }
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 shrink-0 self-start md:self-center transition-all"
+            title={!currentUser ? 'Sign in to unlock Gemini AI intelligence' : 'Ask AI Analyst'}
           >
+            {!currentUser ? (
+              <Lock className="w-3.5 h-3.5 text-amber-300" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            )}
             <span>Ask AI Analyst</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {!currentUser ? (
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded border border-amber-400/30">
+                Sign In
+              </span>
+            ) : (
+              <ArrowRight className="w-3.5 h-3.5" />
+            )}
           </button>
         )}
       </div>

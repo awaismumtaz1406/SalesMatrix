@@ -12,7 +12,8 @@ import {
   LogOut,
   LogIn,
   Save,
-  ChevronDown
+  ChevronDown,
+  Lock
 } from 'lucide-react';
 import { formatCurrency } from '../utils/dataAnalytics';
 import { User } from '@supabase/supabase-js';
@@ -31,6 +32,7 @@ interface NavbarProps {
   onOpenAiInsights: () => void;
   onOpenAuthModal: () => void;
   onOpenSavedModal: () => void;
+  onRequireAuth: (reason: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,7 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onExportCsv,
   onOpenAiInsights,
   onOpenAuthModal,
-  onOpenSavedModal
+  onOpenSavedModal,
+  onRequireAuth
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -81,6 +84,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <FileSpreadsheet className="w-3 h-3 text-emerald-400" />
                   {currentDatasetName}
                 </span>
+
+                {/* Demo Data vs Custom Workspace badge */}
+                {currentUser ? (
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                    isCustomData 
+                      ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' 
+                      : 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                  }`}>
+                    {isCustomData ? 'Custom Workspace' : 'Demo Data'}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-800/90 text-slate-400 border border-slate-700/80">
+                    Demo Data
+                  </span>
+                )}
+
                 <span>•</span>
                 <span>{rowCount} records</span>
                 <span>•</span>
@@ -117,23 +136,65 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
+            {/* Import / Paste CSV (Gated for guests) */}
             <button
-              onClick={onOpenUploadModal}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border border-slate-700 transition-colors shadow-sm"
+              onClick={() => {
+                if (!currentUser) {
+                  onRequireAuth('Sign in to import custom datasets');
+                } else {
+                  onOpenUploadModal();
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all shadow-sm ${
+                !currentUser
+                  ? 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border-slate-700/70 hover:border-slate-600'
+                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border-slate-700'
+              }`}
+              title={!currentUser ? 'Sign in to import custom datasets' : 'Import or paste custom CSV data'}
             >
-              <Upload className="w-3.5 h-3.5 text-cyan-400" />
+              {!currentUser ? (
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Upload className="w-3.5 h-3.5 text-cyan-400" />
+              )}
               <span>Import / Paste CSV</span>
+              {!currentUser && (
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/25">
+                  Sign In
+                </span>
+              )}
             </button>
 
+            {/* Export CSV (Gated for guests) */}
             <button
-              onClick={onExportCsv}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border border-slate-700 transition-colors shadow-sm"
-              title="Export currently filtered dataset as CSV"
+              onClick={() => {
+                if (!currentUser) {
+                  onRequireAuth('Sign in to export data');
+                } else {
+                  onExportCsv();
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all shadow-sm ${
+                !currentUser
+                  ? 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border-slate-700/70 hover:border-slate-600'
+                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border-slate-700'
+              }`}
+              title={!currentUser ? 'Sign in to export data' : 'Export currently filtered dataset as CSV'}
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              {!currentUser ? (
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+              )}
               <span>Export CSV</span>
+              {!currentUser && (
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/25">
+                  Sign In
+                </span>
+              )}
             </button>
 
+            {/* AI Insights Button */}
             <button
               onClick={onOpenAiInsights}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-500/20 transition-all border border-indigo-400/30"

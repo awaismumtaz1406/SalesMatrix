@@ -27,7 +27,7 @@ import { FinancialView } from './components/views/FinancialView';
 import { PivotView } from './components/views/PivotView';
 import { ChartStudioView } from './components/views/ChartStudioView';
 import { DataTableView } from './components/views/DataTableView';
-import { Cloud, LogIn, X } from 'lucide-react';
+import { Cloud, LogIn, X, Lock } from 'lucide-react';
 
 export default function App() {
   const [records, setRecords] = useState<SalesRecord[]>(DEFAULT_SALES_DATA);
@@ -39,6 +39,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [savedDashboardsCount, setSavedDashboardsCount] = useState<number>(0);
   const [dismissBanner, setDismissBanner] = useState<boolean>(false);
+  const [authPromptReason, setAuthPromptReason] = useState<string | null>(null);
 
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
@@ -87,6 +88,16 @@ export default function App() {
     if (data) {
       setSavedDashboardsCount(data.length);
     }
+  };
+
+  const handleRequireAuth = (reason: string) => {
+    setAuthPromptReason(reason);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleOpenAuthModal = (reason?: string) => {
+    setAuthPromptReason(reason || null);
+    setIsAuthModalOpen(true);
   };
 
   // Unique options extracted from data
@@ -166,6 +177,10 @@ export default function App() {
   };
 
   const handleExportFilteredCsv = () => {
+    if (!currentUser) {
+      handleRequireAuth('Sign in to export data');
+      return;
+    }
     const csvContent = 'data:text/csv;charset=utf-8,' + generateSalesCsv(filteredRecords);
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -187,35 +202,42 @@ export default function App() {
         isCustomData={isCustomData}
         currentUser={currentUser}
         savedCount={savedDashboardsCount}
-        onOpenUploadModal={() => setIsUploadModalOpen(true)}
+        onOpenUploadModal={() => {
+          if (!currentUser) {
+            handleRequireAuth('Sign in to import custom datasets');
+          } else {
+            setIsUploadModalOpen(true);
+          }
+        }}
         onResetData={handleResetData}
         onExportCsv={handleExportFilteredCsv}
         onOpenAiInsights={() => setIsAiInsightsOpen(true)}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenAuthModal={() => handleOpenAuthModal()}
         onOpenSavedModal={() => setIsSavedModalOpen(true)}
+        onRequireAuth={handleRequireAuth}
       />
 
-      {/* Polite Cloud Persistence Prompt for unauthenticated visitors */}
+      {/* Polite Cloud Persistence & Demo Mode Notice for unauthenticated visitors */}
       {!currentUser && !dismissBanner && (
         <div className="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-indigo-950/80 border-b border-indigo-500/20 py-2.5 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-300">
               <Cloud className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>
-                <strong>Cloud Persistence:</strong> Sign in with Supabase to save your customized views & datasets, or explore the live interactive dashboard below.
+                <strong>Demo Mode Active:</strong> You are exploring live sales analytics on sample data. Sign in to import custom datasets, export reports, ask AI questions, and save dashboard snapshots.
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-sm"
+                onClick={() => handleOpenAuthModal('Sign in to unlock full cloud workspace')}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-sm"
               >
-                <LogIn className="w-3 h-3" />
+                <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In / Sign Up</span>
               </button>
               <button
                 onClick={() => setDismissBanner(true)}
-                className="p-1 text-slate-400 hover:text-white"
+                className="p-1 text-slate-400 hover:text-white transition-colors"
                 title="Dismiss"
               >
                 <X className="w-3.5 h-3.5" />
@@ -277,8 +299,10 @@ export default function App() {
               {currentView === 'overview' && (
                 <OverviewView 
                   records={filteredRecords} 
-                  summary={kpiSummary} 
+                  summary={kpiSummary}
+                  currentUser={currentUser}
                   onOpenAiInsights={() => setIsAiInsightsOpen(true)}
+                  onRequireAuth={handleRequireAuth}
                 />
               )}
               {currentView === 'trends' && (
@@ -311,7 +335,7 @@ export default function App() {
 
       </main>
 
-      {/* CSV Import & Management Modal */}
+      {/* CSV Import & Management Modal (Available once authenticated) */}
       <DataUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
@@ -327,15 +351,22 @@ export default function App() {
         onClose={() => setIsAiInsightsOpen(false)}
         records={filteredRecords}
         summary={kpiSummary}
+        currentUser={currentUser}
+        onRequireAuth={handleRequireAuth}
       />
 
       {/* Supabase Authentication Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthPromptReason(null);
+        }}
         currentUser={currentUser}
+        promptReason={authPromptReason}
         onAuthSuccess={(user) => {
           setCurrentUser(user);
+          setAuthPromptReason(null);
           if (user) updateSavedCount();
         }}
       />
@@ -345,7 +376,7 @@ export default function App() {
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}
         currentUser={currentUser}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={(reason) => handleRequireAuth(reason || 'Sign in to save and access cloud dashboards')}
         currentRecords={records}
         currentDatasetName={datasetName}
         currentView={currentView}

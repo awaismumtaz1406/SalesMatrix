@@ -28,6 +28,7 @@ interface AuthModalProps {
   currentUser: User | null;
   onAuthSuccess: (user: User | null) => void;
   initialTab?: 'signin' | 'signup' | 'config';
+  promptReason?: string | null;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -35,7 +36,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   currentUser,
   onAuthSuccess,
-  initialTab = 'signin'
+  initialTab = 'signin',
+  promptReason = null
 }) => {
   const [tab, setTab] = useState<'signin' | 'signup' | 'config'>(
     !isSupabaseConfigured() ? 'config' : initialTab
@@ -169,6 +171,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Feature Gating Reason Banner */}
+        {promptReason && !currentUser && (
+          <div className="mx-5 mt-4 p-3 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 text-xs text-indigo-200 flex items-center gap-2.5 shadow-md">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-400">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-white text-xs">{promptReason}</p>
+              <p className="text-[11px] text-slate-300">Sign in to your account or create a free one to proceed.</p>
+            </div>
+          </div>
+        )}
 
         {/* Tab Headers */}
         {!currentUser && (

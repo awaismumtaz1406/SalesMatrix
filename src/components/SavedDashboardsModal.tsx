@@ -28,7 +28,7 @@ interface SavedDashboardsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User | null;
-  onOpenAuth: () => void;
+  onOpenAuth: (reason?: string) => void;
   currentRecords: SalesRecord[];
   currentDatasetName: string;
   currentView: DashboardView;
@@ -117,7 +117,8 @@ export const SavedDashboardsModal: React.FC<SavedDashboardsModalProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      onOpenAuth();
+      onClose();
+      onOpenAuth('Sign in to save dashboards to your cloud account');
       return;
     }
     if (!saveName.trim()) {
@@ -263,7 +264,7 @@ export const SavedDashboardsModal: React.FC<SavedDashboardsModalProps> = ({
               </div>
               <div className="pt-2">
                 <button
-                  onClick={() => { onClose(); onOpenAuth(); }}
+                  onClick={() => { onClose(); onOpenAuth('Sign in to save and access cloud dashboards'); }}
                   className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition-all inline-flex items-center gap-2"
                 >
                   <LogIn className="w-3.5 h-3.5" />
