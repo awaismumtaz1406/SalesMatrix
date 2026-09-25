@@ -1,0 +1,7 @@
+{
+  "name": "Brand Builder",
+  "description": "Imagine your product across diverse advertising mediums—billboards, newspapers, social feeds, subway posters, packaging, and digital displays—with guaranteed visual consistency and zero human presence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
